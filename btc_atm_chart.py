@@ -43,7 +43,13 @@ products = requests.get("https://api.delta.exchange/v2/products").json().get("re
 btc_options = [p for p in products if p['contract_type'] == 'option' and p['asset_symbol'] == 'BTC']
 
 # Filter ATM strike (same call & put)
-atm_strike = min(set([p['strike_price'] for p in btc_options]), key=lambda x: abs(x - spot_price))
+strike_prices = [p['strike_price'] for p in btc_options if p['strike_price'] is not None]
+
+if not strike_prices:
+    st.error("No valid strike prices available from Delta Exchange. Try again later.")
+    st.stop()
+
+atm_strike = min(set(strike_prices), key=lambda x: abs(x - spot_price))
 atm_call = next((p for p in btc_options if p['option_type'] == 'call' and p['strike_price'] == atm_strike), None)
 atm_put = next((p for p in btc_options if p['option_type'] == 'put' and p['strike_price'] == atm_strike), None)
 
